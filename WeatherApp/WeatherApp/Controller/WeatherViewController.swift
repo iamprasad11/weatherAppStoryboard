@@ -7,13 +7,16 @@
 
 import UIKit
 import CoreData
+import CoreLocation
 
 
-class WeatherViewController: UIViewController, WeatherManagerDelegate{
+class WeatherViewController: UIViewController, WeatherManagerDelegate,CLLocationManagerDelegate{
     
     var weatherManager = WeatherManager()
     
     var selectedCity: CityName? = nil
+    
+    let locationManager = CLLocationManager()
     
     @IBOutlet weak var temperatureLable: UILabel!
     
@@ -38,6 +41,7 @@ class WeatherViewController: UIViewController, WeatherManagerDelegate{
         }
         
         weatherManager.fetchWeather(cityName: city_name!.trimmingCharacters(in: .whitespaces))
+        cityNameField.text = ""
     }
     
     @IBAction func addToFav(_ sender: Any) {
@@ -57,9 +61,25 @@ class WeatherViewController: UIViewController, WeatherManagerDelegate{
         }
     }
     
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+            let locValue:CLLocationCoordinate2D = manager.location!.coordinate
+            print("locations = \(locValue.latitude) \(locValue.longitude)")
+            weatherManager.fetchLocation(lat: locValue.latitude, long: locValue.longitude)
+        }
+    
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        self.locationManager.delegate = self
+        self.locationManager.desiredAccuracy = kCLLocationAccuracyNearestTenMeters
+        self.locationManager.requestAlwaysAuthorization()
+        self.locationManager.startUpdatingLocation()
+    }
+    
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        
         cityNameField.delegate = self
         weatherManager.delegate = self
         validationMessage.isHidden = true
@@ -67,8 +87,8 @@ class WeatherViewController: UIViewController, WeatherManagerDelegate{
         if(selectedCity != nil){
             weatherManager.fetchWeather(cityName: selectedCity!.cityName)
         }
+       
     }
-    
     
     func didUpdateWeather(_ weather: WeatherModel) {
         print("WVC: \(weather.tempString)")
